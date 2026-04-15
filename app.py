@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, flash
 import sqlite3
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
+app.secret_key = 'secret123'   # 🔥 Needed for flash messages
 
 # -------------------------------
 # Initialize Database
@@ -24,7 +25,7 @@ def init_db():
 
 
 # -------------------------------
-# Home Page (Form)
+# Home Page
 # -------------------------------
 @app.route('/')
 def home():
@@ -32,7 +33,7 @@ def home():
 
 
 # -------------------------------
-# Submit Form Data
+# Submit Form
 # -------------------------------
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -51,7 +52,8 @@ def submit():
     conn.commit()
     conn.close()
 
-    return redirect('/')
+    flash("Data submitted successfully!")   # ✅ Success message
+    return redirect('/')   # ✅ Stay on form
 
 
 # -------------------------------
@@ -70,7 +72,7 @@ def view():
 
 
 # -------------------------------
-# Delete Single Row
+# Delete
 # -------------------------------
 @app.route('/delete/<int:id>')
 def delete(id):
@@ -78,41 +80,15 @@ def delete(id):
     cursor = conn.cursor()
 
     cursor.execute("DELETE FROM users WHERE id = ?", (id,))
-
-    conn.commit()
-
-    # 🔥 Reset ID if table becomes empty
-    cursor.execute("SELECT COUNT(*) FROM users")
-    count = cursor.fetchone()[0]
-
-    if count == 0:
-        cursor.execute("DELETE FROM sqlite_sequence WHERE name='users'")
-
     conn.commit()
     conn.close()
 
-    return redirect('/view')
-
-
-# -------------------------------
-# Delete All Data (Optional)
-# -------------------------------
-@app.route('/delete_all')
-def delete_all():
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-
-    cursor.execute("DELETE FROM users")
-    cursor.execute("DELETE FROM sqlite_sequence WHERE name='users'")
-
-    conn.commit()
-    conn.close()
-
-    return redirect('/view')
+    return redirect('/')
 
 
 # -------------------------------
 # Run App
 # -------------------------------
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+if __name__ == '__main__':
+    init_db()
+    app.run(host='0.0.0.0', port=10000)
